@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-oom
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-oom
+  template:
+    metadata:
+      labels:
+        app: test-oom
+    spec:
+      containers:
+      - name: app
+        image: python:3.12-alpine
+        command: ["python3", "-c", "x = 'A' * (50 * 1024 * 1024); import time; time.sleep(100)"]
+        resources:
+          limits:
+            memory: "10Mi"

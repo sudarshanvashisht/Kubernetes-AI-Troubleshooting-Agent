@@ -1,0 +1,18 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-imagepull
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-imagepull
+  template:
+    metadata:
+      labels:
+        app: test-imagepull
+    spec:
+      containers:
+      - name: app
+        image: nginx:non-existent-version-tag-9999
