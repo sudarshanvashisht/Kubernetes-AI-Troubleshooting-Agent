@@ -1,15 +1,16 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from loguru import logger
 import json
+from app.core.auth import require_api_key
 from app.kubernetes.kubectl import kubectl
 
 router = APIRouter(tags=["Clusters"])
 
 
 @router.get("/clusters")
-async def get_clusters():
+async def get_clusters(_key=Depends(require_api_key)):
     """Retrieve list of available Kubernetes cluster contexts from kubeconfig."""
-    result = await kubectl.run("config get-contexts -o json")
+    result = await kubectl.run(["config", "get-contexts", "-o", "json"])
 
     clusters = []
     current_context = None
@@ -36,7 +37,7 @@ async def get_clusters():
 
     # Fallback if json parsing didn't find contexts
     if not clusters:
-        res_plain = await kubectl.run("config get-contexts --no-headers")
+        res_plain = await kubectl.run(["config", "get-contexts", "--no-headers"])
         if res_plain.success and res_plain.stdout:
             for line in res_plain.stdout.splitlines():
                 parts = line.split()

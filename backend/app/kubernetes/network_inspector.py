@@ -28,11 +28,14 @@ class NetworkInspector:
         Returns:
             Dict with total services count, problematic services, and issue flag.
         """
-        ns_flag = f"-n {namespace}" if namespace else "-A"
+        args_svc = ["get", "svc", "-o", "json"]
+        args_ep = ["get", "endpoints", "-o", "json"]
+        if not namespace:
+            args_svc.append("-A")
+            args_ep.append("-A")
 
-        # Get services and endpoints
-        svc_result = await kubectl.run(f"get svc {ns_flag} -o json", context=context)
-        ep_result = await kubectl.run(f"get endpoints {ns_flag} -o json", context=context)
+        svc_result = await kubectl.run(args_svc, context=context, namespace=namespace)
+        ep_result = await kubectl.run(args_ep, context=context, namespace=namespace)
 
         if not svc_result.success:
             logger.error(f"Failed to get services: {svc_result.stderr}")

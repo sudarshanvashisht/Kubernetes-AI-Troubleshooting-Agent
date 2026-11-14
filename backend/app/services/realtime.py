@@ -1,7 +1,6 @@
-"""Realtime progress notification service for InsForge Realtime."""
+"""Realtime progress notification service (InsForge Socket.IO)."""
 
 import aiohttp
-# Monkeypatch ClientWSTimeout which is missing in this environment's aiohttp version
 if not hasattr(aiohttp, "ClientWSTimeout"):
     class ClientWSTimeout:
         def __init__(self, *, ws_receive=None, ws_close=10.0):
@@ -12,44 +11,45 @@ if not hasattr(aiohttp, "ClientWSTimeout"):
 import socketio
 from loguru import logger
 
+from app.core.config import settings
+
 
 class RealtimeService:
-    """Service to emit real-time investigation progress over Socket.IO to InsForge."""
-
     def __init__(self):
         self.sio = socketio.AsyncClient(logger=False, engineio_logger=False)
-        self.url = "https://h7d3q8mn.us-east.insforge.app"
-        self.token = "anon_c955b75459fc1cb6eda4cddaa2725ff7b89c36b9aeabc447b57067e3afcd88c8"
+        self.url = settings.insforge_url
+        self.token = settings.insforge_anon_key
+        self._warned = False
+
+    def _available(self) -> bool:
+        if not self.url or not self.token:
+            if not self._warned:
+                logger.warning("InsForge realtime not configured; realtime progress disabled.")
+                self._warned = True
+            return False
+        return True
 
     async def connect(self):
-        """Connect to InsForge Realtime Socket.IO if not already connected."""
-        if not self.sio.connected:
-            await self.sio.connect(self.url, auth={"token": self.token})
-
-    async def emit_progress(self, investigation_id: str | None, message: str):
-        """Emit progress update to the investigation's realtime channel."""
-        if not investigation_id:
+        if not self._available():
             return
+        if not self.sio.connected:
+            try:
+                await self.sio.connect(self.url, auth={"token": self.token})
+            except Exception as e:
+                logger.warning("Failed to connect to InsForge realtime", exc_info=e)
 
+    async def emit_progress(self, investigation_id, message, user_id=None):
+        if not investigation_id or not self._available():
+            return
         try:
             await self.connect()
-            channel = f"investigation:{investigation_id}"
-
-            # Subscribe first (required by InsForge Realtime before publishing)
+            if not self.sio.connected:
+                return
+            channel = f"investigation:{user_id or 'anon'}:{investigation_id}"
             await self.sio.emit("realtime:subscribe", {"channel": channel})
-
-            # Publish event
-            await self.sio.emit(
-                "realtime:publish",
-                {
-                    "channel": channel,
-                    "event": "progress",
-                    "payload": {"message": message},
-                },
-            )
-            logger.info(f"Emitted progress to {channel}: {message}")
+            await self.sio.emit("realtime:publish", {"channel": channel, "event": "progress", "payload": {"message": message}})
         except Exception as e:
-            logger.error(f"Failed to emit realtime progress: {e}")
+            logger.warning("Failed to emit realtime progress", exc_info=e)
 
 
 realtime_service = RealtimeService()

@@ -2,12 +2,15 @@ import axios from "axios";
 import type { FullDiagnosisResponse } from "../types";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8001";
+
+const apiKey = process.env.NEXT_PUBLIC_API_KEY;
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
+    ...(apiKey ? { "X-API-Key": apiKey } : {}),
   },
   timeout: 120000, // 2 minutes for diagnosis LLM pipeline
 });

@@ -46,13 +46,10 @@ class EventsAnalyzer:
         Returns:
             Dict with total event count, warning events, and issue flag.
         """
-        cmd = "get events -o json"
-        if namespace:
-            cmd += f" -n {namespace}"
-        else:
-            cmd += " -A"
-
-        result = await kubectl.run(cmd, context=context)
+        args = ["get", "events", "-o", "json"]
+        if not namespace:
+            args.append("-A")
+        result = await kubectl.run(args, context=context, namespace=namespace)
 
         if not result.success:
             logger.error(f"Failed to get events: {result.stderr}")

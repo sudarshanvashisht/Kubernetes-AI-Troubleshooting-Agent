@@ -4,13 +4,12 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     ports:
-      - "8001:8000"
+      - "127.0.0.1:8001:8000"
     volumes:
-      - ./backend:/app
-      - /home/saransh/.kube:/root/.kube:ro
+      - ${KUBECONFIG_DIR:-${HOME}/.kube}:/root/.kube:ro
     networks:
       - default
-      - kind
+      - ${KIND_NETWORK:-kind}
     env_file:
       - ./backend/.env
     ulimits:
@@ -23,12 +22,13 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: http://localhost:8001
+        NEXT_PUBLIC_API_KEY: ${NEXT_PUBLIC_API_KEY:-}
+        NEXT_PUBLIC_INSFORGE_URL: ${NEXT_PUBLIC_INSFORGE_URL:-}
+        NEXT_PUBLIC_INSFORGE_ANON_KEY: ${NEXT_PUBLIC_INSFORGE_ANON_KEY:-}
     ports:
-      - "3000:3000"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-      - /app/.next
+      - "127.0.0.1:3000:3000"
     env_file:
       - ./frontend/.env.local
     networks:
@@ -44,4 +44,5 @@ services:
 networks:
   default:
   kind:
+    name: ${KIND_NETWORK:-kind}
     external: true

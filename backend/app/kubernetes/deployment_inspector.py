@@ -27,13 +27,10 @@ class DeploymentInspector:
         Returns:
             Dict with healthy status, total count, and unhealthy deployments list.
         """
-        cmd = "get deployments -o json"
-        if namespace:
-            cmd += f" -n {namespace}"
-        else:
-            cmd += " -A"
-
-        result = await kubectl.run(cmd, context=context)
+        args = ["get", "deployments", "-o", "json"]
+        if not namespace:
+            args.append("-A")
+        result = await kubectl.run(args, context=context, namespace=namespace)
 
         if not result.success:
             logger.error(f"Failed to get deployments: {result.stderr}")

@@ -1,16 +1,18 @@
 """Investigation and Diagnosis API endpoints."""
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from loguru import logger
 
+from app.core.auth import require_api_key
 from app.models.schemas import InvestigationRequest, FullDiagnosisResponse, InvestigationResult, AIDiagnosis
 from app.services.diagnosis import diagnosis_service
+from app.kubernetes.kubectl import validate_namespace, validate_context
 
 router = APIRouter(tags=["Investigation"])
 
 
 @router.post("/investigate", response_model=FullDiagnosisResponse)
-async def investigate_cluster(request: InvestigationRequest = InvestigationRequest()):
+async def investigate_cluster(request: InvestigationRequest = InvestigationRequest(), _key=Depends(require_api_key)):
     """Run a Kubernetes cluster investigation and AI diagnosis.
 
     Collects troubleshooting evidence from the cluster including:
@@ -25,6 +27,13 @@ async def investigate_cluster(request: InvestigationRequest = InvestigationReque
     a confidence rating.
     """
     logger.info(f"Full diagnosis requested (namespace={request.namespace})")
+
+    try:
+        validate_namespace(request.namespace)
+        validate_context(request.context)
+    except ValueError as e:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=422, detail=str(e))
 
     try:
         pipeline_data = await diagnosis_service.run_diagnosis(

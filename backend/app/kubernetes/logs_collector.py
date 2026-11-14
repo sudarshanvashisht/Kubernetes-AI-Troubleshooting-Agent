@@ -31,15 +31,14 @@ class LogsCollector:
             Dict with pod name, namespace, and log content.
         """
         lines = tail_lines or self.DEFAULT_TAIL_LINES
-        cmd = f"logs {pod_name} -n {namespace} --tail={lines}"
+        args = ["logs", pod_name, f"--tail={lines}"]
 
-        result = await kubectl.run(cmd, context=context)
+        result = await kubectl.run(args, context=context, namespace=namespace)
 
         if not result.success:
             logger.warning(f"Failed to get logs for {namespace}/{pod_name}: {result.stderr}")
-            # Try getting logs from previous container instance
-            cmd_prev = f"logs {pod_name} -n {namespace} --tail={lines} --previous"
-            result_prev = await kubectl.run(cmd_prev, context=context)
+            args_prev = ["logs", pod_name, f"--tail={lines}", "--previous"]
+            result_prev = await kubectl.run(args_prev, context=context, namespace=namespace)
 
             if result_prev.success:
                 return {

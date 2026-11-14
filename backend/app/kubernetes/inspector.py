@@ -43,13 +43,14 @@ class PodInspector:
         Returns:
             Dict with healthy status, total pod count, and problematic pods list.
         """
-        cmd = "get pods -o json"
+        args = ["get", "pods", "-o", "json"]
         if namespace:
-            cmd += f" -n {namespace}"
+            # namespace passed via executor validation
+            pass
         else:
-            cmd += " -A"
+            args.append("-A")
 
-        result = await kubectl.run(cmd, context=context)
+        result = await kubectl.run(args, context=context, namespace=namespace)
 
         if not result.success:
             logger.error(f"Failed to get pods: {result.stderr}")

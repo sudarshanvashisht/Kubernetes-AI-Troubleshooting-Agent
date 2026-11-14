@@ -1,7 +1,8 @@
 """Pydantic models for request/response schemas."""
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, Any
+from uuid import UUID
 
 
 class DiagnosisRequest(BaseModel):
@@ -126,9 +127,9 @@ class InvestigationResult(BaseModel):
 class InvestigationRequest(BaseModel):
     """Request model for triggering an investigation."""
 
-    namespace: Optional[str] = None
-    context: Optional[str] = None
-    investigation_id: Optional[str] = None
+    namespace: Optional[str] = Field(default=None, max_length=63)
+    context: Optional[str] = Field(default=None, max_length=253)
+    investigation_id: Optional[UUID] = None
 
 
 class InvestigationResponse(BaseModel):
