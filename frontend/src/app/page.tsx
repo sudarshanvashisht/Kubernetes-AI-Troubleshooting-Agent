@@ -133,18 +133,18 @@ export default function DashboardPage() {
   const confidence = diag?.confidence ?? currentDiagnosis?.confidence;
 
   return (
-    <div className="min-h-screen bg-[#030712] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-950/20 via-[#030712] to-[#030712] text-slate-100 flex flex-col selection:bg-blue-600/30">
+    <div className="min-h-screen bg-[#030712] bg-slate-950 text-slate-100 flex flex-col selection:bg-teal-600/30">
       
       {/* Top Navbar */}
       <header className="w-full border-b border-slate-800/40 bg-[#030712]/60 backdrop-blur-xl sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-lg bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 shadow-md">
+            <div className="w-8 h-8 rounded-lg bg-teal-600/20 border border-teal-500/30 flex items-center justify-center text-teal-400 shadow-md">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
               </svg>
             </div>
-            <span className="text-xs font-mono text-blue-400 bg-blue-950/40 border border-blue-800/40 px-3 py-1 rounded-full">
+            <span className="text-xs font-mono text-teal-400 bg-teal-950/40 border border-teal-800/40 px-3 py-1 rounded-full">
               AI Kubernetes Agent
             </span>
           </div>
@@ -157,7 +157,7 @@ export default function DashboardPage() {
         {/* Hero Section */}
         <section className="text-center space-y-6 w-full animate-fadeIn">
           <div className="space-y-3">
-            <h1 className="text-4xl sm:text-5xl font-extrabold text-white tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-blue-300">
+            <h1 className="text-4xl sm:text-5xl font-extrabold text-white tracking-tight text-white">
               AI Kubernetes Agent
             </h1>
             <p className="text-sm text-slate-400 font-light max-w-md mx-auto">
@@ -177,7 +177,7 @@ export default function DashboardPage() {
                     value={selectedCluster}
                     onChange={(e) => setSelectedCluster(e.target.value)}
                     disabled={isInvestigating}
-                    className="w-full px-3.5 py-2.5 bg-[#030712] border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 cursor-pointer font-mono appearance-none pr-8"
+                    className="w-full px-3.5 py-2.5 bg-[#030712] border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 cursor-pointer font-mono appearance-none pr-8"
                   >
                     {clusters.map((c) => (
                       <option key={c} value={c} className="bg-[#0b1329] text-white">
@@ -202,14 +202,14 @@ export default function DashboardPage() {
                 value={namespace}
                 onChange={(e) => setNamespace(e.target.value)}
                 disabled={isInvestigating}
-                className="w-full px-3.5 py-2.5 bg-[#030712] border border-slate-800 rounded-xl text-xs text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 font-mono transition-all"
+                className="w-full px-3.5 py-2.5 bg-[#030712] border border-slate-800 rounded-xl text-xs text-white placeholder-slate-600 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 font-mono transition-all"
               />
             </div>
 
             <button
               onClick={handleInvestigate}
               disabled={isInvestigating}
-              className="w-full py-3 px-6 bg-[#2563eb] hover:bg-blue-500 active:scale-[0.99] disabled:bg-blue-800/60 disabled:cursor-not-allowed text-white font-semibold text-sm rounded-xl transition-all duration-150 shadow-lg shadow-blue-600/25 flex items-center justify-center space-x-2 mt-2"
+              className="w-full py-3 px-6 bg-[#2563eb] hover:bg-teal-500 active:scale-[0.99] disabled:bg-teal-800/60 disabled:cursor-not-allowed text-white font-semibold text-sm rounded-xl transition-all duration-150 shadow-lg shadow-teal-600/25 flex items-center justify-center space-x-2 mt-2"
             >
               {isInvestigating ? (
                 <>
@@ -240,11 +240,11 @@ export default function DashboardPage() {
           <section className="w-full glass-panel rounded-2xl p-6 shadow-2xl space-y-4 font-mono text-xs text-left animate-fadeIn">
             <div className="flex items-center justify-between border-b border-slate-800/60 pb-3">
               <div className="flex items-center space-x-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-ping" />
+                <span className="w-2.5 h-2.5 rounded-full bg-teal-500 animate-ping" />
                 <span className="text-[11px] font-bold text-slate-300 tracking-wider">DIAGNOSTIC PIPELINE LOGS</span>
               </div>
               {isInvestigating ? (
-                <span className="text-[10px] bg-blue-950/80 border border-blue-800/50 text-blue-400 px-2.5 py-0.5 rounded-full font-semibold animate-pulse">
+                <span className="text-[10px] bg-teal-950/80 border border-teal-800/50 text-teal-400 px-2.5 py-0.5 rounded-full font-semibold animate-pulse">
                   ● RUNNING
                 </span>
               ) : (
@@ -257,7 +257,7 @@ export default function DashboardPage() {
             <div className="space-y-2 max-h-64 overflow-y-auto pr-1 scrollbar-thin">
               {progressMessages.map((msg, i) => (
                 <div key={i} className="flex items-start space-x-2 text-slate-300 bg-[#030712]/60 p-2.5 rounded-lg border border-slate-800/40">
-                  <span className="text-blue-400 shrink-0 select-none">›</span>
+                  <span className="text-teal-400 shrink-0 select-none">›</span>
                   <span className="leading-relaxed">{msg}</span>
                 </div>
               ))}
@@ -271,7 +271,7 @@ export default function DashboardPage() {
           <section className="w-full glass-panel rounded-2xl p-7 shadow-2xl space-y-6 text-left animate-fadeIn">
             <div className="flex items-center justify-between border-b border-slate-800/60 pb-4">
               <div className="flex items-center space-x-2.5">
-                <div className="w-7 h-7 rounded-lg bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400">
+                <div className="w-7 h-7 rounded-lg bg-teal-600/20 border border-teal-500/30 flex items-center justify-center text-teal-400">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                   </svg>
@@ -325,7 +325,7 @@ export default function DashboardPage() {
                   {kubectlCmds.map((cmdStr, idx) => (
                     <div
                       key={idx}
-                      className="flex items-center justify-between bg-[#030712] border border-slate-800 px-4 py-2.5 rounded-xl font-mono text-xs text-blue-300 group hover:border-slate-700 transition-colors"
+                      className="flex items-center justify-between bg-[#030712] border border-slate-800 px-4 py-2.5 rounded-xl font-mono text-xs text-teal-300 group hover:border-slate-700 transition-colors"
                     >
                       <span className="truncate pr-3">$ {cmdStr}</span>
                       <button
@@ -375,7 +375,7 @@ export default function DashboardPage() {
                     onClick={() => handleSelectHistory(record)}
                     className={`cursor-pointer p-4 rounded-2xl border transition-all duration-150 flex items-center justify-between text-left ${
                       isSelected
-                        ? "bg-blue-950/30 border-blue-500/60 shadow-lg shadow-blue-950/50 ring-1 ring-blue-500/30"
+                        ? "bg-teal-950/30 border-teal-500/60 shadow-lg shadow-teal-950/50 ring-1 ring-teal-500/30"
                         : "glass-card hover:bg-slate-900/60 hover:border-slate-700/60"
                     }`}
                   >
@@ -390,7 +390,7 @@ export default function DashboardPage() {
 
                     <div className="flex items-center space-x-3 shrink-0">
                       {recordConf !== undefined && (
-                        <span className="text-[10px] px-2.5 py-0.5 rounded-full font-mono bg-blue-950/60 border border-blue-800/40 text-blue-400 font-medium">
+                        <span className="text-[10px] px-2.5 py-0.5 rounded-full font-mono bg-teal-950/60 border border-teal-800/40 text-teal-400 font-medium">
                           {recordConf}%
                         </span>
                       )}
