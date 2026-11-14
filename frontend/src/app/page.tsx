@@ -1,9 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/hooks/useAuth";
-import { insforge } from "@/lib/insforge";
 import { investigateCluster, getClusters } from "@/services/api";
 import type {
   FullDiagnosisResponse,
@@ -12,9 +9,6 @@ import type {
 } from "@/types";
 
 export default function DashboardPage() {
-  const router = useRouter();
-  const { user, loading: authLoading, signOut } = useAuth();
-
   // Investigation state
   const [isInvestigating, setIsInvestigating] = useState(false);
   const [status, setStatus] = useState<"Ready" | "Investigating" | "Completed" | "Error">("Ready");
@@ -31,7 +25,6 @@ export default function DashboardPage() {
   const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
-  const activeChannelRef = useRef<string | null>(null);
   const progressEndRef = useRef<HTMLDivElement | null>(null);
 
   // Fetch available Kubernetes clusters from kubeconfig
@@ -45,110 +38,21 @@ export default function DashboardPage() {
     })();
   }, []);
 
-  // Redirect to /auth if not logged in
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.replace("/auth");
-    }
-  }, [user, authLoading, router]);
-
   // Scroll to bottom of progress log
   useEffect(() => {
     progressEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [progressMessages]);
 
-  const loadHistoryData = async (userId: string) => {
-    setLoadingHistory(true);
-    try {
-      const { data, error } = await insforge.database
-        .from("investigations")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false });
-
-      if (!error && Array.isArray(data) && data.length > 0) {
-        setHistory(data as InvestigationHistoryRecord[]);
-      } else {
-        const local = localStorage.getItem(`k8s_history_${userId}`);
-        if (local) {
-          try {
-            setHistory(JSON.parse(local));
-          } catch {
-            setHistory([]);
-          }
-        }
-      }
-    } catch {
-      const local = localStorage.getItem(`k8s_history_${userId}`);
-      if (local) {
-        try {
-          setHistory(JSON.parse(local));
-        } catch {
-          setHistory([]);
-        }
-      }
-    } finally {
-      setLoadingHistory(false);
-    }
-  };
-
-  // Fetch history on user login
+  // Load history from localStorage
   useEffect(() => {
-    if (!user?.id) return;
-    const userId = user.id;
-
-    let isMounted = true;
-    (async () => {
+    const local = localStorage.getItem("k8s_history_guest");
+    if (local) {
       try {
-        const { data, error } = await insforge.database
-          .from("investigations")
-          .select("*")
-          .eq("user_id", userId)
-          .order("created_at", { ascending: false });
-
-        if (!isMounted) return;
-
-        if (!error && Array.isArray(data) && data.length > 0) {
-          setHistory(data as InvestigationHistoryRecord[]);
-        } else {
-          const local = localStorage.getItem(`k8s_history_${userId}`);
-          if (local) {
-            try {
-              setHistory(JSON.parse(local));
-            } catch {
-              setHistory([]);
-            }
-          }
-        }
+        setHistory(JSON.parse(local));
       } catch {
-        if (!isMounted) return;
-        const local = localStorage.getItem(`k8s_history_${userId}`);
-        if (local) {
-          try {
-            setHistory(JSON.parse(local));
-          } catch {
-            setHistory([]);
-          }
-        }
+        setHistory([]);
       }
-    })();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [user?.id]);
-
-  // Cleanup realtime subscription on unmount
-  useEffect(() => {
-    return () => {
-      if (activeChannelRef.current) {
-        try {
-          insforge.realtime.unsubscribe(activeChannelRef.current);
-        } catch {
-          // ignore cleanup errors
-        }
-      }
-    };
+    }
   }, []);
 
   const handleInvestigate = async () => {
@@ -162,30 +66,6 @@ export default function DashboardPage() {
     setProgressMessages(["Initiating cluster diagnostic pipeline..."]);
 
     const investigationId = Date.now().toString();
-    const channelName = `investigation:${investigationId}`;
-    activeChannelRef.current = channelName;
-
-    // 1. Subscribe to Realtime channel
-    try {
-      await insforge.realtime.subscribe(channelName);
-      
-      const onProgress = (payload: unknown) => {
-        let msg = "";
-        if (typeof payload === "string") {
-          msg = payload;
-        } else if (payload && typeof payload === "object") {
-          const p = payload as RealtimeProgressPayload & { payload?: { message?: string }; message?: string };
-          msg = p.payload?.message || p.message || JSON.stringify(p);
-        }
-        if (msg) {
-          setProgressMessages((prev) => [...prev, msg]);
-        }
-      };
-
-      insforge.realtime.on("progress", onProgress);
-    } catch (realtimeErr) {
-      console.warn("Realtime subscription notice:", realtimeErr);
-    }
 
     // 2. Call Backend API
     try {
@@ -197,46 +77,21 @@ export default function DashboardPage() {
         "AI SRE analysis and diagnosis complete.",
       ]);
 
-      // 3. Save result to history
-      if (user?.id) {
-        const newRecord: InvestigationHistoryRecord = {
-          id: investigationId,
-          user_id: user.id,
-          created_at: new Date().toISOString(),
-          result: responseData,
-        };
-
-        const diag = responseData?.diagnosis;
-        const rootCauseVal = diag?.root_cause || responseData?.root_cause || "Unknown";
-        const confidenceVal = diag?.confidence ?? responseData?.confidence ?? 0;
-
-        // Try inserting into InsForge Database
+      // Save result to local history
+      const newRecord: InvestigationHistoryRecord = {
+        id: investigationId,
+        created_at: new Date().toISOString(),
+        result: responseData,
+      };
+      setHistory((prev) => {
+        const updated = [newRecord, ...prev.filter((h) => h.id !== investigationId)];
         try {
-          await insforge.database.from("investigations").insert({
-            id: investigationId,
-            user_id: user.id,
-            timestamp: new Date().toISOString(),
-            root_cause: rootCauseVal,
-            namespace: namespace || "all",
-            confidence: confidenceVal,
-            status: "Completed",
-            result: responseData,
-          });
-        } catch (dbErr) {
-          console.warn("Database save notice:", dbErr);
+          localStorage.setItem("k8s_history_guest", JSON.stringify(updated));
+        } catch {
+          // ignore localStorage quota
         }
-
-        // Also save to local state and localStorage for instant reactivity
-        setHistory((prev) => {
-          const updated = [newRecord, ...prev.filter((h) => h.id !== investigationId)];
-          try {
-            localStorage.setItem(`k8s_history_${user.id}`, JSON.stringify(updated));
-          } catch {
-            // ignore localStorage quota
-          }
-          return updated;
-        });
-      }
+        return updated;
+      });
     } catch (err: unknown) {
       const msg =
         err instanceof Error
@@ -250,11 +105,6 @@ export default function DashboardPage() {
       ]);
     } finally {
       setIsInvestigating(false);
-      try {
-        insforge.realtime.unsubscribe(channelName);
-      } catch {
-        // ignore
-      }
     }
   };
 
@@ -271,17 +121,6 @@ export default function DashboardPage() {
     setStatus("Completed");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
-
-  if (authLoading || !user) {
-    return (
-      <div className="min-h-screen bg-[#030712] flex items-center justify-center text-gray-400">
-        <div className="flex items-center space-x-3 bg-slate-900/50 border border-slate-800 px-5 py-3 rounded-xl shadow-xl backdrop-blur-md">
-          <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-          <span className="text-sm font-medium text-slate-300">Loading session...</span>
-        </div>
-      </div>
-    );
-  }
 
   // Extract diagnosis information safely
   const diag = currentDiagnosis?.diagnosis;
@@ -306,19 +145,9 @@ export default function DashboardPage() {
               </svg>
             </div>
             <span className="text-xs font-mono text-blue-400 bg-blue-950/40 border border-blue-800/40 px-3 py-1 rounded-full">
-              {user.email}
+              AI Kubernetes Agent
             </span>
           </div>
-
-          <button
-            onClick={() => signOut()}
-            className="text-xs text-slate-400 hover:text-white transition-colors bg-slate-900/60 hover:bg-slate-800/80 px-3.5 py-1.5 rounded-lg border border-slate-800 flex items-center space-x-1.5"
-          >
-            <span>Sign out</span>
-            <svg className="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-          </button>
         </div>
       </header>
 
